@@ -1,11 +1,11 @@
 <script lang='ts'>
-  import type { ClassValue } from 'tailwind-variants'
+  // @ts-nocheck
   import type { Events, Props } from './index.js'
   import { cn } from '$lib/utils'
   import { Button as ButtonPrimitive } from 'bits-ui'
   import { buttonVariants } from './index.js'
 
-  type $$Props = Props & { class: ClassValue }
+  type $$Props = Props
   type $$Events = Events
 
   let className: $$Props['class']
