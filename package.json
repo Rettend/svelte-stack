@@ -1,35 +1,36 @@
 {
-	"name": "svelte-stack",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"db:push": "drizzle-kit push",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
-	},
-	"devDependencies": {
-		"@antfu/eslint-config": "^4.12.0",
-		"@sveltejs/adapter-auto": "^6.0.0",
-		"@sveltejs/kit": "^2.20.5",
-		"@sveltejs/vite-plugin-svelte": "^5.0.3",
-		"@unocss/eslint-plugin": "^66.1.0-beta.11",
-		"drizzle-kit": "^0.30.6",
-		"eslint": "^9.24.0",
-		"eslint-plugin-svelte": "^3.5.1",
-		"svelte": "^5.26.2",
-		"svelte-check": "^4.1.5",
-		"typescript": "^5.8.3",
-		"vite": "^6.2.6"
-	},
-	"dependencies": {
-		"@libsql/client": "^0.15.3",
-		"drizzle-orm": "^0.41.0"
-	}
+  "name": "svelte-stack",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "lint": "eslint --fix ."
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.3",
+    "drizzle-orm": "^0.41.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.12.0",
+    "@sveltejs/adapter-auto": "^6.0.0",
+    "@sveltejs/kit": "^2.20.5",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@unocss/eslint-plugin": "^66.1.0-beta.11",
+    "drizzle-kit": "^0.30.6",
+    "eslint": "^9.24.0",
+    "eslint-plugin-svelte": "^3.5.1",
+    "svelte": "^5.26.2",
+    "svelte-check": "^4.1.5",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.6"
+  }
 }
