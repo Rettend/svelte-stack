@@ -26,7 +26,7 @@
     { name: 'ESLint (antfu)', version: getVersion('@antfu/eslint-config', devDependencies) },
     { name: 'Shadcn UI (via unocss-preset-shadcn)', version: getVersion('unocss-preset-shadcn', devDependencies) },
     { name: 'Iconify', version: getVersion('@iconify-json/solar', devDependencies) },
-    { name: 'Fontsource', version: getVersion('@fontsource/berkshire-swash', dependencies) },
+    { name: 'Fontsource', version: getVersion('@fontsource/ubuntu', dependencies) },
   ]
 </script>
 
@@ -41,6 +41,9 @@
       Count: {count}
     </p>
     <Button variant='gradient' class='text-lg' on:click={increment}>
+      Increment
+    </Button>
+    <Button variant='default' class='text-lg' on:click={increment}>
       Increment
     </Button>
   </div>

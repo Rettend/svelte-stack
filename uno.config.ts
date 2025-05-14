@@ -17,7 +17,7 @@ export default defineConfig({
     presetTypography(),
     presetAttributify(),
     presetShadcn({
-      color: 'blue',
+      color: 'violet',
     }),
     presetIcons({
       extraProperties: {
@@ -44,12 +44,12 @@ body {
   height: 100dvh;
   width: 100dvw;
   overflow-x: hidden;
-  font-family: 'Berkshire Swash', cursive;
+  font-family: 'Ubuntu', sans-serif;
 }
 .bg-primary-gradient {
-  background: linear-gradient(to bottom left, hsl(221.2 83.2% 63.0%), hsl(221.2 83.2% 43.0%));
+  background: linear-gradient(to bottom left, hsl(262.1 83.3% 67.5%), hsl(262.1 83.3% 47.5%));
   transition: opacity 0.15s ease-in-out;
-  box-shadow: 0 2px 8px 5px hsl(221.2 83.2% 53.3% / 0.2);
+  box-shadow: 0 2px 8px 5px hsl(262.1 83.3% 57.8% / 0.2);
   text-shadow: 0 2px 2px hsl(210 40% 98% / 0.2);
 }
 .bg-primary-gradient:hover {
