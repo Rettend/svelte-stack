@@ -47,13 +47,16 @@
     <Button variant='default' class='text-base' on:click={increment}>
       Increment
     </Button>
-    <Button variant='gradient' class='text-base' on:click={increment}>
-      Increment
-    </Button>
     <Button variant='secondary' class='text-base' on:click={increment}>
       Increment
     </Button>
     <Button variant='outline' class='text-base' on:click={increment}>
+      Increment
+    </Button>
+    <Button variant='destructive' class='text-base' on:click={increment}>
+      Increment
+    </Button>
+    <Button variant='ghost' class='text-base' on:click={increment}>
       Increment
     </Button>
     <Button variant='outline' class='text-base' on:click={() => signIn('github')}>

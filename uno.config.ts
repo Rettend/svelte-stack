@@ -55,6 +55,15 @@ body {
 .bg-primary-gradient:hover {
   opacity: 0.85;
 }
+.bg-destructive-gradient {
+  background: linear-gradient(to bottom left, hsl(0 84.2% 70.2%), hsl(0 84.2% 50.2%));
+  box-shadow: 0 2px 8px 5px hsl(0 84.2% 60.2% / 0.2);
+  text-shadow: 0 2px 2px hsl(0 0% 98% / 0.2); /* Assuming light foreground for destructive */
+  transition: opacity 0.15s ease-in-out;
+}
+.bg-destructive-gradient:hover {
+  opacity: 0.85;
+}
 `
       },
     },
