@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] authjs
+- [x] authjs
 - [x] unocss, shadcn
 - [ ] svelte stores
 - [ ] drizzle and turso

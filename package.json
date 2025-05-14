@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''",
+    "sync": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "db:push": "drizzle-kit push",
@@ -17,6 +17,7 @@
     "lint": "eslint --fix ."
   },
   "dependencies": {
+    "@auth/sveltekit": "^1.9.2",
     "@fontsource/ubuntu": "^5.2.5",
     "@libsql/client": "^0.15.5",
     "@unocss/reset": "^66.1.1",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.13.0",
+    "@iconify-json/ph": "^1.2.2",
     "@iconify-json/solar": "^1.2.2",
     "@sveltejs/adapter-auto": "^6.0.1",
     "@sveltejs/kit": "^2.21.0",

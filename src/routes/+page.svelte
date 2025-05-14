@@ -1,5 +1,6 @@
 <script lang='ts'>
   import { Button } from '$lib/components/ui/button'
+  import { signIn } from '@auth/sveltekit/client'
   import { dependencies, devDependencies, packageManager } from '../../package.json'
 
   let count = $state(0)
@@ -40,11 +41,24 @@
     <p class='text-3xl font-medium'>
       Count: {count}
     </p>
-    <Button variant='gradient' class='text-lg' on:click={increment}>
+  </div>
+
+  <div class='flex flex-col items-center gap-4'>
+    <Button variant='default' class='text-base' on:click={increment}>
       Increment
     </Button>
-    <Button variant='default' class='text-lg' on:click={increment}>
+    <Button variant='gradient' class='text-base' on:click={increment}>
       Increment
+    </Button>
+    <Button variant='secondary' class='text-base' on:click={increment}>
+      Increment
+    </Button>
+    <Button variant='outline' class='text-base' on:click={increment}>
+      Increment
+    </Button>
+    <Button variant='outline' class='text-base' on:click={() => signIn('github')}>
+      <span class='i-ph:github-logo-bold mr-2 size-5'></span>
+      Login with GitHub
     </Button>
   </div>
 
