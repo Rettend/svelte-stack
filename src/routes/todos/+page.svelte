@@ -5,7 +5,6 @@
   import { Label } from '$lib/components/ui/label'
   import { session } from '$lib/stores/session.svelte'
   import { todoStore } from '$lib/stores/todos.svelte'
-  import { signIn } from '@auth/sveltekit/client'
 
   let newTodoText = $state('')
 
@@ -70,11 +69,5 @@
     <p class='text-center text-lg text-muted-foreground'>
       Please <a href='/auth/signin' class='text-primary hover:underline'>sign in</a> to manage your todos.
     </p>
-    <div class='mt-4 flex justify-center'>
-      <Button variant='outline' onclick={() => signIn('github')}>
-        <span class='i-ph:github-logo-bold mr-2 size-5'></span>
-        Log in with GitHub
-      </Button>
-    </div>
   {/if}
 </div>

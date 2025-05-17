@@ -40,6 +40,10 @@
           <span class='i-ph:github-logo-bold mr-2 size-5'></span>
           Log in with GitHub
         </Button>
+        <Button variant='outline' size='sm' onclick={() => signIn('google')}>
+          <span class='i-ph:google-logo-bold mr-2 size-5'></span>
+          Log in with Google
+        </Button>
       {/if}
     </div>
   </header>
