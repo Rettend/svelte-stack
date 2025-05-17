@@ -11,12 +11,14 @@
     "sync": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "lint": "eslint --fix ."
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.9.1",
     "@auth/sveltekit": "^1.9.2",
     "@fontsource/ubuntu": "^5.2.5",
     "@libsql/client": "^0.15.6",
@@ -38,7 +40,7 @@
     "@unocss/eslint-plugin": "^66.1.2",
     "@unocss/extractor-svelte": "^66.1.2",
     "@unocss/preset-wind3": "^66.1.2",
-    "bits-ui": "0.22.0",
+    "bits-ui": "^1.4.8",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9.27.0",
     "eslint-plugin-svelte": "^3.8.1",
