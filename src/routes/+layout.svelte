@@ -1,61 +1,44 @@
 <script lang='ts'>
+  import { page } from '$app/state'
+  import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar'
   import { Button } from '$lib/components/ui/button'
   import { session } from '$lib/stores/session'
   import { signIn, signOut } from '@auth/sveltekit/client'
-  import { Avatar, AvatarFallback, AvatarImage } from 'bits-ui' // Using bits-ui for shadcn components
   import { onMount } from 'svelte'
   import '@unocss/reset/tailwind.css'
   import 'virtual:uno.css'
   import '@fontsource/ubuntu'
 
   onMount(async () => {
-    const clientSession = await getSession()
-    session.set(clientSession)
+    session.set(page.data.session)
   })
-
-  // Reactive statement to log session changes (optional, for debugging)
-  $effect(() => {
-    console.log('Session store changed:', $session)
-  })
-
 </script>
 
-<div class='app-container min-h-screen flex flex-col'>
-  <nav class='flex items-center justify-between gap-4 bg-card p-4 shadow-md'>
-    <a href='/' class='text-xl text-primary font-bold'>Svelte Stack</a>
-    <div class='flex items-center gap-4'>
+<div class='app-container min-h-screen flex flex-col bg-background text-foreground'>
+  <header class='flex flex-col items-center gap-4 bg-card p-6'>
+    <a href='/' class='flex items-center gap-2 text-3xl text-primary font-bold'>
+      <span class='i-solar:star-bold size-8'></span>
+      Svelte Stack
+    </a>
+    <div class='flex items-center gap-3'>
       {#if $session?.user}
-        <Avatar class='size-8'>
+        <Avatar class='size-9'>
           <AvatarImage src={$session.user.image ?? undefined} alt={$session.user.name ?? 'User'} />
           <AvatarFallback>{$session.user.name?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
         </Avatar>
-        <span class='text-sm'>Welcome, {$session.user.name ?? $session.user.email}!</span>
-        <!-- Client-side sign out -->
-        <Button variant='outline' size='sm' on:click={() => signOut()}>Sign Out</Button>
-
-        <!-- Form-based sign out (alternative) -->
-        <!--
-        <form action="/auth/signout" method="POST" use:enhance>
-          <Button type="submit" variant="outline" size="sm">Sign Out</Button>
-        </form>
-        -->
+        <span class='font-medium'>{$session.user.name ?? $session.user.email}</span>
+        <Button variant='outline' size='sm' onclick={() => signOut()}>Sign Out</Button>
       {:else if $session === undefined}
         <p class='text-sm text-muted-foreground'>Loading session...</p>
       {:else}
-        <!-- Client-side sign in -->
-        <Button variant='ghost' size='sm' on:click={() => signIn('github')}>Sign In with GitHub</Button>
-
-        <!-- Link-based sign in (alternative) -->
-        <!-- <a href="/auth/signin" class="text-sm">Sign In</a> -->
+        <Button variant='outline' size='sm' onclick={() => signIn('github')}>
+          <span class='i-ph:github-logo-bold mr-2 size-5'></span>
+          Login with GitHub
+        </Button>
       {/if}
     </div>
-  </nav>
-  <main class='flex-grow p-4'>
+  </header>
+  <main class='flex flex-grow flex-col items-center p-4'>
     <slot />
   </main>
 </div>
-
-<style>
-  /* You can add global styles here or in a separate app.css if preferred */
-  /* The UnoCSS setup handles most styling utilities */
-</style>

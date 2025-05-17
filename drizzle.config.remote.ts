@@ -7,7 +7,7 @@ export default defineConfig({
     url: process.env.DATABASE_URL!,
     authToken: process.env.DATABASE_AUTH_TOKEN,
   },
+  dialect: 'turso',
   verbose: true,
   strict: true,
-  dialect: 'turso',
 })

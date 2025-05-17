@@ -1,6 +1,5 @@
 <script lang='ts'>
   import { Button } from '$lib/components/ui/button'
-  import { signIn } from '@auth/sveltekit/client'
   import { dependencies, devDependencies, packageManager } from '../../package.json'
 
   let count = $state(0)
@@ -31,12 +30,7 @@
   ]
 </script>
 
-<div class='min-h-screen flex flex-col items-center gap-15 bg-background p-8'>
-  <h1 class='flex items-center gap-2 text-4xl text-primary font-bold'>
-    <span class='i-solar:star-bold size-8'></span>
-    Svelte Stack
-  </h1>
-
+<div class='flex flex-col items-center gap-8 bg-background pt-8'>
   <div class='flex flex-col items-center gap-4'>
     <p class='text-3xl font-medium'>
       Count: {count}
@@ -44,24 +38,20 @@
   </div>
 
   <div class='flex flex-col items-center gap-4'>
-    <Button variant='default' class='text-base' on:click={increment}>
+    <Button variant='default' class='text-base' onclick={increment}>
       Increment
     </Button>
-    <Button variant='secondary' class='text-base' on:click={increment}>
+    <Button variant='secondary' class='text-base' onclick={increment}>
       Increment
     </Button>
-    <Button variant='outline' class='text-base' on:click={increment}>
+    <Button variant='outline' class='text-base' onclick={increment}>
       Increment
     </Button>
-    <Button variant='destructive' class='text-base' on:click={increment}>
+    <Button variant='destructive' class='text-base' onclick={increment}>
       Increment
     </Button>
-    <Button variant='ghost' class='text-base' on:click={increment}>
+    <Button variant='ghost' class='text-base' onclick={increment}>
       Increment
-    </Button>
-    <Button variant='outline' class='text-base' on:click={() => signIn('github')}>
-      <span class='i-ph:github-logo-bold mr-2 size-5'></span>
-      Login with GitHub
     </Button>
   </div>
 

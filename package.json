@@ -11,10 +11,14 @@
     "sync": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
+    "l:generate": "drizzle-kit generate --config=./drizzle.config.local.ts",
+    "l:push": "drizzle-kit push --config=./drizzle.config.local.ts",
+    "l:migrate": "drizzle-kit migrate --config=./drizzle.config.local.ts",
+    "l:studio": "drizzle-kit studio --config=./drizzle.config.local.ts",
+    "r:generate": "drizzle-kit generate --config=./drizzle.config.remote.ts",
+    "r:push": "drizzle-kit push --config=./drizzle.config.remote.ts",
+    "r:migrate": "drizzle-kit migrate --config=./drizzle.config.remote.ts",
+    "r:studio": "drizzle-kit studio --config=./drizzle.config.remote.ts",
     "lint": "eslint --fix ."
   },
   "dependencies": {
