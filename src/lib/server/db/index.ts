@@ -6,11 +6,13 @@ import * as schema from './schema'
 
 if (!env.DATABASE_URL)
   throw new Error('DATABASE_URL is not set')
+if (env.DRIZZLE_LOCAL && !env.DATABASE_URL_LOCAL)
+  throw new Error('DATABASE_URL_LOCAL is not set')
 if (!dev && !env.DATABASE_AUTH_TOKEN)
   throw new Error('DATABASE_AUTH_TOKEN is not set')
 
 const client = createClient({
-  url: env.DATABASE_URL,
+  url: env.DRIZZLE_LOCAL ? env.DATABASE_URL_LOCAL : env.DATABASE_URL,
   authToken: env.DATABASE_AUTH_TOKEN,
 })
 

@@ -4,6 +4,7 @@ declare global {
   namespace App {
     interface Platform {
       env: {
+        DRIZZLE_LOCAL: boolean
         DATABASE_URL: string
         DATABASE_AUTH_TOKEN: string
         AUTH_SECRET: string

@@ -33,7 +33,7 @@
       {:else}
         <Button variant='outline' size='sm' onclick={() => signIn('github')}>
           <span class='i-ph:github-logo-bold mr-2 size-5'></span>
-          Login with GitHub
+          Log in with GitHub
         </Button>
       {/if}
     </div>
