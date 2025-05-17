@@ -7,3 +7,4 @@
 - [ ] svelte-query
 - [ ] csr
 - [ ] trpc
+- [ ] vitest, playwright
