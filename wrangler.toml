@@ -1,0 +1,8 @@
+name = "svelte-stack"
+compatibility_date = "2025-04-01"
+main = ".svelte-kit/cloudflare/_worker.js"
+workers_dev = true
+
+[assets]
+binding = "ASSETS"
+directory = ".svelte-kit/cloudflare"
