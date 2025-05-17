@@ -20,6 +20,7 @@
         "@cloudflare/workers-types": "^4.20250517.0",
         "@iconify-json/ph": "^1.2.2",
         "@iconify-json/solar": "^1.2.2",
+        "@lucide/svelte": "^0.511.0",
         "@sveltejs/adapter-cloudflare": "^7.0.3",
         "@sveltejs/kit": "^2.21.0",
         "@sveltejs/vite-plugin-svelte": "^5.0.3",
@@ -277,6 +278,8 @@
     "@libsql/linux-x64-musl": ["@libsql/linux-x64-musl@0.5.10", "", { "os": "linux", "cpu": "x64" }, "sha512-Ujv2KyHPSnTKQyl7I0m8MsWNvo4pIQ3ZruXJYYLQWVe8WkvErmucV55GIcSExd+06Uzh3qq/A/SH8s47xpCpFw=="],
 
     "@libsql/win32-x64-msvc": ["@libsql/win32-x64-msvc@0.5.10", "", { "os": "win32", "cpu": "x64" }, "sha512-wZMMsw1mq/lhX6qtG7q/eDKmGOT/Kyb4fgpq1d6yz2MkZUGTSXKse05eYIzkW5nS/BTeeb0S6RkTgaFVOXdmNw=="],
+
+    "@lucide/svelte": ["@lucide/svelte@0.511.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-aLCSPMUJmHlCuLXzXENXa4Z1NV2mN1iAZAFKk4bEbey+/MdsNlu+/DqwVkgW3Yvj6p8y8Vn5xZ2v9CLmPlA6Vw=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@0.2.9", "", { "dependencies": { "@emnapi/core": "^1.4.0", "@emnapi/runtime": "^1.4.0", "@tybys/wasm-util": "^0.9.0" } }, "sha512-OKRBiajrrxB9ATokgEQoG87Z25c67pCpYcCwmXYX8PBftC9pBfN18gnm/fh1wurSLEKIAt+QRFLFCQISrb66Jg=="],
 

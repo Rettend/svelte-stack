@@ -2,9 +2,9 @@
 
 - [x] authjs
 - [x] unocss, shadcn
-- [ ] svelte stores
-- [ ] drizzle and turso
+- [x] svelte stores (session store with runes, todo store with classes & runes)
+- [x] drizzle and turso (todos table and API)
+- [ ] todos feature (frontend UI, API integration)
 - [ ] svelte-query
-- [ ] csr
 - [ ] trpc
 - [ ] vitest, playwright

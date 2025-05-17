@@ -79,3 +79,17 @@ export const authenticators = sqliteTable(
     }),
   ]),
 )
+
+export const todos = sqliteTable('todo', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  text: text('text').notNull(),
+  completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('createdAt', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  userId: text('userId')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+})
