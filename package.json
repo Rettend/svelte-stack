@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.13.1",
+    "@cloudflare/workers-types": "^4.20250517.0",
     "@iconify-json/ph": "^1.2.2",
     "@iconify-json/solar": "^1.2.2",
     "@sveltejs/adapter-cloudflare": "^7.0.3",
