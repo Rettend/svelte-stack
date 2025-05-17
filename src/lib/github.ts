@@ -1,13 +1,14 @@
-import type { OAuthConfig, OAuthUserConfig } from '@auth/sveltekit/providers'
+import type { OAuthConfig, OAuthUserConfig } from '@auth/core/providers'
+import type { Profile as AuthCoreProfile, TokenSet } from '@auth/core/types'
 
 export interface GitHubEmail {
   email: string
   primary: boolean
   verified: boolean
-  visibility: 'public' | 'private'
+  visibility: 'public' | 'private' | null
 }
 
-export interface GitHubProfile {
+export interface RawGitHubProfile {
   login: string
   id: number
   node_id: string
@@ -53,16 +54,24 @@ export interface GitHubProfile {
     space: number
     private_repos: number
   }
+  enterprise?: {
+    baseUrl?: string
+  }
   [claim: string]: unknown
 }
 
+export type CustomGitHubAuthProfile = AuthCoreProfile & {
+  id: string
+  email_verified?: boolean | null
+}
+
 export default function GitHub(
-  config: OAuthUserConfig<GitHubProfile> & {
+  config: OAuthUserConfig<RawGitHubProfile> & {
     enterprise?: {
       baseUrl?: string
     }
   },
-): OAuthConfig<GitHubProfile> {
+): OAuthConfig<RawGitHubProfile> {
   const baseUrl = config?.enterprise?.baseUrl ?? 'https://github.com'
   const apiBaseUrl = config?.enterprise?.baseUrl
     ? `${config?.enterprise?.baseUrl}/api/v3`
@@ -79,37 +88,58 @@ export default function GitHub(
     token: `${baseUrl}/login/oauth/access_token`,
     userinfo: {
       url: `${apiBaseUrl}/user`,
-      async request({ tokens, provider }: Handler) {
-        const profile = await fetch(provider.userinfo?.url as URL, {
-          headers: {
-            'Authorization': `Bearer ${tokens.access_token}`,
-            'User-Agent': 'authjs',
-          },
-        }).then(async res => await res.json())
+    },
+    async profile(profile: RawGitHubProfile, tokens: TokenSet): Promise<CustomGitHubAuthProfile> {
+      let finalEmail: string | null = profile.email
+      let isVerified = false
 
-        if (!profile.email) {
-          const res = await fetch(`${apiBaseUrl}/user/emails`, {
+      if (tokens.access_token) {
+        try {
+          const emailsResponse = await fetch(`${apiBaseUrl}/user/emails`, {
             headers: {
               'Authorization': `Bearer ${tokens.access_token}`,
-              'User-Agent': 'authjs',
+              'User-Agent': 'authjs-custom-github-provider',
             },
           })
 
-          if (res.ok) {
-            const emails: GitHubEmail[] = await res.json()
-            profile.email = (emails.find(e => e.primary) ?? emails[0]).email
+          if (emailsResponse.ok) {
+            const emails: GitHubEmail[] = await emailsResponse.json()
+            if (emails && emails.length > 0) {
+              let chosenEmailEntry: GitHubEmail | undefined
+
+              if (profile.email) {
+                const matchedPublicEmail = emails.find(e => e.email === profile.email)
+                if (matchedPublicEmail?.verified)
+                  chosenEmailEntry = matchedPublicEmail
+              }
+
+              if (!chosenEmailEntry)
+                chosenEmailEntry = emails.find(e => e.primary && e.verified) ?? emails.find(e => e.verified)
+
+              if (!chosenEmailEntry)
+                chosenEmailEntry = emails.find(e => e.primary) ?? emails[0]
+
+              if (chosenEmailEntry) {
+                finalEmail = chosenEmailEntry.email
+                isVerified = chosenEmailEntry.verified
+              }
+            }
+          }
+          else {
+            console.error(`[GitHub Provider Profile] Failed to fetch emails. Status: ${emailsResponse.status}`)
           }
         }
+        catch (error) {
+          console.error('[GitHub Provider Profile] Error fetching user emails:', error)
+        }
+      }
 
-        return profile
-      },
-    },
-    profile(profile) {
       return {
         id: profile.id.toString(),
         name: profile.name ?? profile.login,
-        email: profile.email,
+        email: isVerified ? finalEmail : null,
         image: profile.avatar_url,
+        email_verified: isVerified,
       }
     },
     style: { bg: '#24292f', text: '#fff' },
