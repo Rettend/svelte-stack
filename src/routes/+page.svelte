@@ -18,15 +18,42 @@
   }
 
   const techStack = [
-    { name: 'Svelte', version: getVersion('svelte', devDependencies) },
-    { name: 'TypeScript', version: getVersion('typescript', devDependencies) },
-    { name: 'Vite', version: getVersion('vite', devDependencies) },
-    { name: 'Bun', version: getPackageManager(packageManager) },
-    { name: 'UnoCSS', version: getVersion('unocss', devDependencies) },
-    { name: 'ESLint (antfu)', version: getVersion('@antfu/eslint-config', devDependencies) },
-    { name: 'Shadcn UI (via unocss-preset-shadcn)', version: getVersion('unocss-preset-shadcn', devDependencies) },
-    { name: 'Iconify', version: getVersion('@iconify-json/solar', devDependencies) },
-    { name: 'Fontsource', version: getVersion('@fontsource/ubuntu', dependencies) },
+    {
+      title: 'Core',
+      items: [
+        { name: 'Svelte', version: getVersion('svelte', devDependencies) },
+        { name: 'SvelteKit', version: getVersion('@sveltejs/kit', devDependencies) },
+        { name: 'TypeScript', version: getVersion('typescript', devDependencies) },
+        { name: 'Vite', version: getVersion('vite', devDependencies) },
+        { name: 'Bun', version: getPackageManager(packageManager) },
+      ],
+    },
+    {
+      title: 'Styling & UI',
+      items: [
+        { name: 'UnoCSS', version: getVersion('unocss', devDependencies) },
+        { name: 'Shadcn UI (via unocss-preset-shadcn)', version: getVersion('unocss-preset-shadcn', devDependencies) },
+        { name: 'Iconify' },
+        { name: 'Fontsource', version: getVersion('@fontsource/ubuntu', dependencies) },
+      ],
+    },
+    {
+      title: 'Backend & Database',
+      items: [
+        { name: 'Auth.js', version: getVersion('@auth/sveltekit', dependencies) },
+        { name: 'Drizzle ORM', version: getVersion('drizzle-orm', dependencies) },
+        { name: 'Turso DB', version: getVersion('@libsql/client', dependencies) },
+      ],
+    },
+    {
+      title: 'Other',
+      items: [
+        { name: 'Vitest', version: getVersion('vitest', devDependencies) },
+        { name: 'Playwright', version: getVersion('@playwright/test', devDependencies) },
+        { name: 'ESLint (antfu)', version: getVersion('@antfu/eslint-config', devDependencies) },
+        { name: 'Cloudflare', version: getVersion('wrangler', devDependencies) },
+      ],
+    },
   ]
 </script>
 
@@ -57,16 +84,23 @@
 
   <div class='w-fit'>
     <h2 class='mb-4 text-center text-2xl text-primary font-bold'>Tech Stack</h2>
-    <ul class='flex flex-col items-start gap-2'>
-      {#each techStack as tech (tech.name)}
-        <li class='flex items-center gap-2'>
-          <span class='i-solar:check-square-bold size-5 text-primary'></span>
-          {tech.name}
-          {#if tech.version}
-            <span class='text-sm text-muted-foreground'>- v{tech.version}</span>
-          {/if}
-        </li>
+    <div class='flex flex-col gap-6'>
+      {#each techStack as group (group.title)}
+        <div>
+          <h3 class='mb-3 text-xl text-secondary-foreground font-semibold'>{group.title}</h3>
+          <ul class='flex flex-col items-start gap-2'>
+            {#each group.items as tech (tech.name)}
+              <li class='flex items-center gap-2'>
+                <span class='i-solar:check-square-bold size-5 text-primary'></span>
+                {tech.name}
+                {#if tech.version}
+                  <span class='text-sm text-muted-foreground'>- v{tech.version}</span>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        </div>
       {/each}
-    </ul>
+    </div>
   </div>
 </div>
