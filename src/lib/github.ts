@@ -1,5 +1,5 @@
 import type { OAuthConfig, OAuthUserConfig } from '@auth/core/providers'
-import type { Profile as AuthCoreProfile, TokenSet } from '@auth/core/types'
+import type { TokenSet } from '@auth/core/types'
 
 export interface GitHubEmail {
   email: string
@@ -60,8 +60,11 @@ export interface RawGitHubProfile {
   [claim: string]: unknown
 }
 
-export type CustomGitHubAuthProfile = AuthCoreProfile & {
-  id: string
+export interface CustomGitHubAuthProfile {
+  id?: string
+  name?: string | null
+  email?: string | null
+  image?: string | null
   email_verified?: boolean | null
 }
 

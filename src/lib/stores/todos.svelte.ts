@@ -107,7 +107,13 @@ function createTodoStore() {
     async deleteTodo(id: string) {
       this.error = null
       const originalItems = [...this.items]
+      const initialLength = this.items.length
       this.items = this.items.filter(todo => todo.id !== id)
+
+      if (this.items.length === initialLength) {
+        this.items = originalItems
+        return
+      }
 
       try {
         const response = await fetch(`/api/todos/${id}`, { method: 'DELETE' })

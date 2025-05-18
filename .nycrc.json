@@ -1,0 +1,25 @@
+{
+  "all": true,
+  "include": [
+    "src/**/*.{js,ts,svelte}"
+  ],
+  "exclude": [
+    "**/*.{test,spec}.{js,ts,svelte}",
+    "**/*.d.ts",
+    "src/lib/components/ui/**",
+    "src/lib/server/**",
+    "src/routes/api/**",
+    "test/**",
+    "tests/**",
+    ".svelte-kit/**",
+    "node_modules/**",
+    "*.config.{js,ts}",
+    "*.config.*.{js,ts}"
+  ],
+  "reporter": [
+    "text-summary",
+    "html",
+    "lcov"
+  ],
+  "report-dir": "./coverage/playwright"
+}

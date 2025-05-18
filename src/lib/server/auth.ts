@@ -36,6 +36,8 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
     },
     callbacks: {
       async signIn({ profile }) {
+        if (profile && profile.email && !profile.email_verified)
+          return false
         if (!profile?.email)
           return false
 

@@ -8,6 +8,9 @@ node_modules
 /.svelte-kit
 /build
 /coverage
+/test-results
+/playwright-report
+/.nyc_output
 
 # OS
 .DS_Store

@@ -17,10 +17,10 @@
 
 <div class='app-container min-h-screen flex flex-col bg-background text-foreground'>
   <header class='m-a mt-4 w-fit flex flex-col items-center gap-4 border border-primary/20 rounded-lg bg-card p-6'>
-    <a href='/' class='flex items-center gap-2 text-3xl text-primary font-bold'>
+    <h1 class='flex items-center gap-2 text-3xl text-primary font-bold'>
       <span class='i-solar:star-bold size-8'></span>
       Svelte Stack
-    </a>
+    </h1>
     <div class='flex items-center gap-3'>
       <NavItem href='/'>Home</NavItem>
       <NavItem href='/todos'>Todos</NavItem>
