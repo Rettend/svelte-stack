@@ -23,7 +23,7 @@
     "lint": "eslint --fix .",
     "test": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "test:pw": "VITE_COVERAGE=true rimraf .nyc_output && playwright test && nyc report && bun coverage/playwright/index.html",
+    "test:pw": "VITE_COVERAGE=true rimraf .nyc_output && playwright test && nyc report && bunx http-server coverage/playwright --open",
     "test:e2e": "VITE_COVERAGE=true rimraf .nyc_output && playwright test && nyc report && playwright show-report"
   },
   "dependencies": {
