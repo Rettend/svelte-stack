@@ -35,11 +35,17 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
       strategy: 'database',
     },
     callbacks: {
-      async signIn({ profile }) {
-        if (profile && profile.email && !profile.email_verified)
+      async signIn({ user, account, profile }) {
+        if (account?.provider === 'github') {
+          if (!user.email || !user.email_verified)
+            return false
+        }
+        else if (profile && profile.email && !profile.email_verified) {
           return false
-        if (!profile?.email)
+        }
+        else if (!user?.email) {
           return false
+        }
 
         return true
       },
@@ -52,6 +58,44 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
     },
     pages: {
       error: '/auth/error',
+    },
+    cookies: {
+      pkceCodeVerifier: {
+        name: 'authjs.pkce_code_verifier',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: false,
+        },
+      },
+      state: {
+        name: 'authjs.state',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: false,
+        },
+      },
+      callbackUrl: {
+        name: 'authjs.callback-url',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: false,
+        },
+      },
+      sessionToken: {
+        name: 'authjs.session-token',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: false,
+        },
+      },
     },
   }
   return authOptions
