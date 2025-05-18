@@ -1,60 +1,100 @@
-import type { Page, TestInfo } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { test as baseTest, expect } from '@playwright/test'
+import v8ToIstanbul from 'v8-to-istanbul'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const nycOutput = path.join(__dirname, '..', '..', '.nyc_output')
+const projectRoot = path.resolve(__dirname, '..', '..')
+const nycOutput = path.join(projectRoot, '.nyc_output')
 
-// Clean .nyc_output at the start of the test run via package.json script ideally.
-// For now, ensuring it exists, but concurrent top-level rmSync can be problematic.
-if (!fs.existsSync(nycOutput)) {
+if (!fs.existsSync(nycOutput))
   fs.mkdirSync(nycOutput, { recursive: true })
-}
-else {
-  // If playwright runs tests sequentially or this setup is per-worker, this might be okay.
-  // Otherwise, a global setup script or package.json pre-test script should handle cleanup.
-}
 
-interface CoverageTestFixtures {
-  saveCoverage: (page: Page, testInfo: TestInfo) => Promise<void>
-}
-
-const test = baseTest.extend<CoverageTestFixtures>({
-  // eslint-disable-next-line no-empty-pattern
-  saveCoverage: async ({}, use) => {
-    await use(async (page: Page, testInfo: TestInfo) => {
-      const coverage = await page.evaluate(() => (window as any).__coverage__)
-
-      if (coverage && Object.keys(coverage).length > 0) {
-        if (!fs.existsSync(nycOutput))
-          fs.mkdirSync(nycOutput, { recursive: true })
-
-        const coverageFilename = path.join(
-          nycOutput,
-          `coverage-${process.pid}-${testInfo.workerIndex}-${Date.now()}.json`,
-        )
-        await fs.promises.writeFile(
-          coverageFilename,
-          JSON.stringify(coverage),
-        )
-      }
-      else {
-        // Optional: log if no coverage data found for a test.
-        // console.log(`No window.__coverage__ data found for test: ${testInfo.title} in worker ${testInfo.workerIndex}`);
-      }
-    })
-  },
-
-  page: async ({ page, saveCoverage }, use, testInfo) => {
-    // REMOVED: await page.coverage.startJSCoverage(...)
+const test = baseTest.extend({
+  page: async ({ page }, use) => {
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
-    // Save coverage after the test has interacted with the page.
-    await saveCoverage(page, testInfo)
+    const jsCoverage = await page.coverage.stopJSCoverage()
+
+    const coverageMap: Record<string, any> = {}
+    for (const entry of jsCoverage) {
+      if (!entry.source || !entry.url)
+        continue
+
+      let filePathInProject = ''
+      try {
+        const url = new URL(entry.url)
+        if (url.protocol === 'file:') {
+          filePathInProject = fileURLToPath(entry.url)
+        }
+        else if (url.protocol === 'http:' || url.protocol === 'https:') {
+          if (url.pathname.startsWith('/@fs/')) {
+            let absoluteFsPath = url.pathname.substring('/@fs'.length)
+            if (process.platform === 'win32' && /^\/[A-Z]:\//i.test(absoluteFsPath))
+              absoluteFsPath = absoluteFsPath.substring(1)
+
+            filePathInProject = absoluteFsPath
+          }
+          else {
+            filePathInProject = path.join(projectRoot, url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname)
+          }
+        }
+        else {
+          continue
+        }
+      }
+      catch {
+        continue
+      }
+
+      if (!filePathInProject)
+        continue
+
+      let relativePathForIstanbul = path.relative(projectRoot, filePathInProject)
+      relativePathForIstanbul = relativePathForIstanbul.replace(/\\/g, '/')
+
+      const isSvelteKitGenerated = relativePathForIstanbul.startsWith('.svelte-kit/generated/')
+      const isSrc = relativePathForIstanbul.startsWith('src/')
+      if (
+        !(isSrc || isSvelteKitGenerated)
+        || relativePathForIstanbul.includes('node_modules/.vite/deps')
+        || relativePathForIstanbul.startsWith('node_modules/@')
+        || relativePathForIstanbul.startsWith('@vite/')
+        || relativePathForIstanbul.includes('?v=')
+        || relativePathForIstanbul.startsWith('vite/')
+      )
+        // eslint-disable-next-line antfu/curly
+        continue
+
+      try {
+        const converter = v8ToIstanbul(relativePathForIstanbul, 0, { source: entry.source })
+        await converter.load()
+        converter.applyCoverage(entry.functions)
+        const istanbulCoverage = converter.toIstanbul()
+        for (const [absFile, data] of Object.entries(istanbulCoverage)) {
+          const relFile = path.relative(projectRoot, absFile).replace(/\\/g, '/')
+          coverageMap[relFile] = data
+        }
+      }
+      catch (e) {
+        console.error(`[TEST_OPTIONS] Error converting coverage for ${relativePathForIstanbul} (from ${entry.url}):`, e)
+      }
+    }
+
+    if (Object.keys(coverageMap).length > 0) {
+      const coverageFilename = path.join(
+        nycOutput,
+        `coverage-pw-${process.pid}-${Date.now()}.json`,
+      )
+      await fs.promises.writeFile(
+        coverageFilename,
+        JSON.stringify(coverageMap, null, 2),
+      )
+    }
   },
 })
 

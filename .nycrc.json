@@ -1,7 +1,11 @@
 {
   "all": true,
+  "cwd": ".",
+  "extension": [".js", ".ts", ".svelte"],
   "include": [
-    "src/**/*.{js,ts,svelte}"
+    "src/**/*.js",
+    "src/**/*.ts",
+    "src/**/*.svelte"
   ],
   "exclude": [
     "**/*.{test,spec}.{js,ts,svelte}",
