@@ -6,7 +6,7 @@
 - [x] drizzle and turso (todos table and API)
 - [x] todos feature (frontend UI, API integration)
 - [x] vitest
-- [ ] coverage
+- [x] coverage
 - [ ] playwright
 - [ ] svelte-query
 - [ ] trpc

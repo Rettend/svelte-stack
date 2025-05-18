@@ -1,15 +1,8 @@
 {
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "moduleResolution": "bundler",
-    "paths": {
-      "$lib": ["src/lib"],
-      "$lib/*": ["src/lib/*"],
-      "$app/*": [".svelte-kit/generated/client-optimized/*", ".svelte-kit/generated/client/*"]
-    },
     "resolveJsonModule": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "allowJs": true,
     "checkJs": true,
     "strict": true,
@@ -17,13 +10,5 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "src/**/*.svelte",
-    "test/**/*.ts",
-    "vitest.config.ts",
-    "vitest-setup.ts"
-  ]
+  }
 }
