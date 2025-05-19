@@ -1,8 +1,28 @@
 import type { Todo } from './todos.svelte'
+import { trpc } from '$lib/trpc'
 import { flushSync } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { session } from './session.svelte'
 import { todoStore } from './todos.svelte'
+
+vi.mock('$lib/trpc', () => ({
+  trpc: {
+    todos: {
+      list: {
+        query: vi.fn(),
+      },
+      create: {
+        mutate: vi.fn(),
+      },
+      update: {
+        mutate: vi.fn(),
+      },
+      delete: {
+        mutate: vi.fn(),
+      },
+    },
+  },
+}))
 
 function runInEffectRoot(testFn: () => void | Promise<void>) {
   let cleanup: () => void
@@ -20,27 +40,25 @@ function runInEffectRoot(testFn: () => void | Promise<void>) {
 }
 
 describe('todoStore', () => {
-  let originalFetch: typeof globalThis.fetch
-  let cleanupEffect: () => void
+  let cleanupEffect: (() => void) | undefined
 
   beforeEach(() => {
-    originalFetch = globalThis.fetch
-    globalThis.fetch = vi.fn()
+    vi.mocked(trpc.todos.list.query).mockReset()
+    vi.mocked(trpc.todos.create.mutate).mockReset()
+    vi.mocked(trpc.todos.update.mutate).mockReset()
+    vi.mocked(trpc.todos.delete.mutate).mockReset()
 
-    // session.current is intentionally not set here; afterEach ensures it's undefined.
-    // This allows tests to control session state explicitly if needed,
-    // and prevents auto-loading from the effect in todos.svelte.ts for direct method tests.
     todoStore.items = []
     todoStore.error = null
     todoStore.isLoading = false
   })
 
   afterEach(() => {
-    globalThis.fetch = originalFetch
     vi.restoreAllMocks()
-    if (cleanupEffect)
+    if (cleanupEffect) {
       cleanupEffect()
-
+      cleanupEffect = undefined
+    }
     session.current = undefined
     todoStore.items = []
     todoStore.error = null
@@ -62,16 +80,14 @@ describe('todoStore', () => {
 
   describe('loadTodos', () => {
     it('should load todos successfully and update store state', async () => {
-      const mockTodos: Todo[] = [
-        { id: '1', text: 'Todo 1', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
-        { id: '2', text: 'Todo 2', completed: true, createdAt: Date.now(), userId: 'test-user-id' },
+      const mockServerTodos = [
+        { id: '1', text: 'Todo 1', completed: false, createdAt: new Date(Date.now() - 10000).toISOString(), userId: 'test-user-id' },
+        { id: '2', text: 'Todo 2', completed: true, createdAt: new Date(Date.now() - 5000).toISOString(), userId: 'test-user-id' },
       ]
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockTodos,
-      } as Response)
+      const expectedStoreTodos: Todo[] = mockServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
 
-      // session.current is not set here to test loadTodos directly without effect interference
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce(mockServerTodos as any)
+
       todoStore.items = []
 
       const { promise, cleanup } = runInEffectRoot(async () => {
@@ -79,24 +95,18 @@ describe('todoStore', () => {
         flushSync()
 
         expect(todoStore.isLoading).toBe(false)
-        expect(todoStore.items).toEqual(mockTodos)
+        expect(todoStore.items).toEqual(expectedStoreTodos)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).toHaveBeenCalledWith('/api/todos')
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(trpc.todos.list.query).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
     })
 
     it('should handle API error when loading todos', async () => {
-      const apiResponseMessage = 'API problem'
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-        json: async () => ({ message: apiResponseMessage }),
-      } as Response)
+      const apiErrorMessage = 'API problem loading todos'
+      vi.mocked(trpc.todos.list.query).mockRejectedValueOnce(new Error(apiErrorMessage))
 
-      // session.current is not set here to test loadTodos directly without effect interference
       todoStore.items = []
 
       const { promise, cleanup } = runInEffectRoot(async () => {
@@ -105,39 +115,35 @@ describe('todoStore', () => {
 
         expect(todoStore.isLoading).toBe(false)
         expect(todoStore.items).toEqual([])
-        expect(todoStore.error).toBe(apiResponseMessage)
-        expect(globalThis.fetch).toHaveBeenCalledWith('/api/todos')
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(todoStore.error).toBe(apiErrorMessage)
+        expect(trpc.todos.list.query).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
     })
 
     it('should be called by the effect when a user logs in and items are empty', async () => {
-      const mockTodos: Todo[] = [{ id: 'eff', text: 'Effect Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' }]
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockTodos,
-      } as Response)
+      const mockServerTodos = [{ id: 'eff', text: 'Effect Todo', completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' }]
+      const expectedStoreTodos: Todo[] = mockServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce(mockServerTodos as any)
 
       todoStore.items = []
       todoStore.isLoading = false
-      // session.current is undefined initially from beforeEach/afterEach
 
       const { promise, cleanup } = runInEffectRoot(async () => {
-        session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any // Set user to trigger effect
+        session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
         flushSync()
 
         await vi.waitFor(() => {
-          expect(globalThis.fetch).toHaveBeenCalledWith('/api/todos')
+          expect(trpc.todos.list.query).toHaveBeenCalledTimes(1)
         })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1) // Ensure fetch was called exactly once by the effect
 
         await vi.waitFor(() => {
           expect(todoStore.isLoading).toBe(false)
         })
 
-        expect(todoStore.items).toEqual(mockTodos)
+        expect(todoStore.items).toEqual(expectedStoreTodos)
         expect(todoStore.error).toBeNull()
       })
       cleanupEffect = cleanup
@@ -146,33 +152,31 @@ describe('todoStore', () => {
   })
 
   it('should clear todos and errors when user logs out or session is null', async () => {
-    // Setup: Store has items and an error, user is initially logged in
-    const initialTodos: Todo[] = [{ id: '1', text: 'Old Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' }]
-    todoStore.items = [...initialTodos]
+    const initialServerTodos = [{ id: '1', text: 'Old Todo', completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' }]
+    const initialStoreTodos: Todo[] = initialServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+
+    todoStore.items = [...initialStoreTodos]
     todoStore.error = 'Some existing error'
     session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
-    flushSync() // Ensure effect reacts to initial session
+    flushSync()
 
-    // Act: Simulate logout or session resolving to null
     const { promise, cleanup } = runInEffectRoot(async () => {
-      session.current = null // Trigger the effect's cleanup logic
+      session.current = null
       flushSync()
 
-      // Assert: Store items and error are cleared
       expect(todoStore.items).toEqual([])
       expect(todoStore.error).toBeNull()
     })
     cleanupEffect = cleanup
     await promise
 
-    // Additionally, test the scenario where session was undefined then becomes null
-    todoStore.items = [...initialTodos]
+    todoStore.items = [...initialStoreTodos]
     todoStore.error = 'Another existing error'
-    session.current = undefined // Start as if session hasn't loaded
+    session.current = undefined
     flushSync()
 
     const { promise: promise2, cleanup: cleanup2 } = runInEffectRoot(async () => {
-      session.current = null // Session loads, but no user
+      session.current = null
       flushSync()
       expect(todoStore.items).toEqual([])
       expect(todoStore.error).toBeNull()
@@ -184,18 +188,17 @@ describe('todoStore', () => {
   describe('addTodo', () => {
     it('should add a todo successfully and update store state', async () => {
       const newTodoText = 'New Test Todo'
-      const mockNewTodo: Todo = { id: 'new-id', text: newTodoText, completed: false, createdAt: Date.now(), userId: 'test-user-id' }
+      const mockNewServerTodo = { id: 'new-id', text: newTodoText, completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' }
+      const expectedNewStoreTodo: Todo = { ...mockNewServerTodo, createdAt: new Date(mockNewServerTodo.createdAt).getTime() }
 
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockNewTodo,
-      } as Response)
+      vi.mocked(trpc.todos.create.mutate).mockResolvedValueOnce(mockNewServerTodo as any)
 
-      session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any // Mock active session
-      const initialTodos: Todo[] = [
-        { id: '1', text: 'Existing Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
+      session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
+      const initialServerTodos = [
+        { id: '1', text: 'Existing Todo', completed: false, createdAt: new Date(Date.now() - 1000).toISOString(), userId: 'test-user-id' },
       ]
-      todoStore.items = [...initialTodos]
+      const initialStoreTodos: Todo[] = initialServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+      todoStore.items = [...initialStoreTodos]
       todoStore.error = null
       todoStore.isLoading = false
 
@@ -204,16 +207,12 @@ describe('todoStore', () => {
         flushSync()
 
         expect(todoStore.isLoading).toBe(false)
-        expect(todoStore.items.length).toBe(initialTodos.length + 1)
-        expect(todoStore.items[0]).toEqual(mockNewTodo)
-        expect(todoStore.items[1]).toEqual(initialTodos[0])
+        expect(todoStore.items.length).toBe(initialStoreTodos.length + 1)
+        expect(todoStore.items[0]).toEqual(expectedNewStoreTodo)
+        expect(todoStore.items[1]).toEqual(initialStoreTodos[0])
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).toHaveBeenCalledWith('/api/todos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: newTodoText }),
-        })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(trpc.todos.create.mutate).toHaveBeenCalledWith({ text: newTodoText })
+        expect(trpc.todos.create.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -221,19 +220,16 @@ describe('todoStore', () => {
 
     it('should handle API error when adding a todo', async () => {
       const newTodoText = 'Another Test Todo'
-      const apiResponseMessage = 'Failed to add'
+      const apiErrorMessage = 'Failed to add todo'
 
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-        json: async () => ({ message: apiResponseMessage }),
-      } as Response)
+      vi.mocked(trpc.todos.create.mutate).mockRejectedValueOnce(new Error(apiErrorMessage))
 
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
-      const initialTodos: Todo[] = [
-        { id: '1', text: 'Existing Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
+      const initialServerTodos = [
+        { id: '1', text: 'Existing Todo', completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' },
       ]
-      todoStore.items = [...initialTodos]
+      const initialStoreTodos: Todo[] = initialServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+      todoStore.items = [...initialStoreTodos]
       todoStore.error = null
       todoStore.isLoading = false
 
@@ -242,15 +238,11 @@ describe('todoStore', () => {
         flushSync()
 
         expect(todoStore.isLoading).toBe(false)
-        expect(todoStore.items.length).toBe(initialTodos.length)
-        expect(todoStore.items).toEqual(initialTodos)
-        expect(todoStore.error).toBe(apiResponseMessage)
-        expect(globalThis.fetch).toHaveBeenCalledWith('/api/todos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: newTodoText }),
-        })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(todoStore.items.length).toBe(initialStoreTodos.length)
+        expect(todoStore.items).toEqual(initialStoreTodos)
+        expect(todoStore.error).toBe(apiErrorMessage)
+        expect(trpc.todos.create.mutate).toHaveBeenCalledWith({ text: newTodoText })
+        expect(trpc.todos.create.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -258,32 +250,32 @@ describe('todoStore', () => {
 
     it('should not add a todo if text is empty or whitespace', async () => {
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
-      const initialTodos: Todo[] = [
-        { id: '1', text: 'Existing Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
+      const initialServerTodos = [
+        { id: '1', text: 'Existing Todo', completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' },
       ]
-      todoStore.items = [...initialTodos]
+      const initialStoreTodos: Todo[] = initialServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+      todoStore.items = [...initialStoreTodos]
       todoStore.error = null
       todoStore.isLoading = false
-      globalThis.fetch = vi.fn() // Reset fetch mock for this specific test
 
       const { promise, cleanup } = runInEffectRoot(async () => {
-        await todoStore.addTodo('   ') // Test with whitespace
+        await todoStore.addTodo('   ')
         flushSync()
 
         expect(todoStore.isLoading).toBe(false)
-        expect(todoStore.items.length).toBe(initialTodos.length)
-        expect(todoStore.items).toEqual(initialTodos)
+        expect(todoStore.items.length).toBe(initialStoreTodos.length)
+        expect(todoStore.items).toEqual(initialStoreTodos)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).not.toHaveBeenCalled()
+        expect(trpc.todos.create.mutate).not.toHaveBeenCalled()
 
-        await todoStore.addTodo('') // Test with empty string
+        await todoStore.addTodo('')
         flushSync()
 
         expect(todoStore.isLoading).toBe(false)
-        expect(todoStore.items.length).toBe(initialTodos.length)
-        expect(todoStore.items).toEqual(initialTodos)
+        expect(todoStore.items.length).toBe(initialStoreTodos.length)
+        expect(todoStore.items).toEqual(initialStoreTodos)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).not.toHaveBeenCalled()
+        expect(trpc.todos.create.mutate).not.toHaveBeenCalled()
       })
       cleanupEffect = cleanup
       await promise
@@ -292,25 +284,23 @@ describe('todoStore', () => {
 
   describe('toggleTodo', () => {
     const todoToToggleId = 'toggle-me'
-    const initialTodos: Todo[] = [
-      { id: 'other-id', text: 'Another Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
-      { id: todoToToggleId, text: 'Todo to Toggle', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
+    const initialServerTodosForToggle = [
+      { id: 'other-id', text: 'Another Todo', completed: false, createdAt: new Date(Date.now() - 2000).toISOString(), userId: 'test-user-id' },
+      { id: todoToToggleId, text: 'Todo to Toggle', completed: false, createdAt: new Date(Date.now() - 1000).toISOString(), userId: 'test-user-id' },
     ]
+    let initialStoreTodosForToggle: Todo[]
 
     beforeEach(() => {
-      // Ensure a session is active for these tests
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
-      todoStore.items = JSON.parse(JSON.stringify(initialTodos)) // Deep copy to reset between tests
+      initialStoreTodosForToggle = initialServerTodosForToggle.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+      todoStore.items = JSON.parse(JSON.stringify(initialStoreTodosForToggle))
       todoStore.error = null
-      todoStore.isLoading = false // toggleTodo doesn't set isLoading
+      todoStore.isLoading = false
     })
 
     it('should toggle a todo successfully and update store state', async () => {
       const newCompletedStatus = true
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}), // Successful PUT usually returns 200 or 204 with no body or updated item
-      } as Response)
+      vi.mocked(trpc.todos.update.mutate).mockResolvedValueOnce({ id: todoToToggleId, completed: newCompletedStatus, text: 'Todo to Toggle', createdAt: initialServerTodosForToggle.find(t => t.id === todoToToggleId)!.createdAt, userId: 'test-user-id' } as any)
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.toggleTodo(todoToToggleId, newCompletedStatus)
@@ -319,12 +309,8 @@ describe('todoStore', () => {
         const toggledItem = todoStore.items.find(t => t.id === todoToToggleId)
         expect(toggledItem?.completed).toBe(newCompletedStatus)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).toHaveBeenCalledWith(`/api/todos/${todoToToggleId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: newCompletedStatus }),
-        })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(trpc.todos.update.mutate).toHaveBeenCalledWith({ id: todoToToggleId, completed: newCompletedStatus })
+        expect(trpc.todos.update.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -332,28 +318,20 @@ describe('todoStore', () => {
 
     it('should handle API error when toggling a todo and revert state', async () => {
       const newCompletedStatus = true
-      const originalStatus = initialTodos.find(t => t.id === todoToToggleId)!.completed
-      const apiResponseMessage = 'Failed to toggle'
+      const originalStatus = initialStoreTodosForToggle.find(t => t.id === todoToToggleId)!.completed
+      const apiErrorMessage = 'Failed to toggle todo'
 
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-        json: async () => ({ message: apiResponseMessage }),
-      } as Response)
+      vi.mocked(trpc.todos.update.mutate).mockRejectedValueOnce(new Error(apiErrorMessage))
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.toggleTodo(todoToToggleId, newCompletedStatus)
         flushSync()
 
         const toggledItem = todoStore.items.find(t => t.id === todoToToggleId)
-        expect(toggledItem?.completed).toBe(originalStatus) // Reverted
-        expect(todoStore.error).toBe(apiResponseMessage)
-        expect(globalThis.fetch).toHaveBeenCalledWith(`/api/todos/${todoToToggleId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: newCompletedStatus }),
-        })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(toggledItem?.completed).toBe(originalStatus)
+        expect(todoStore.error).toBe(apiErrorMessage)
+        expect(trpc.todos.update.mutate).toHaveBeenCalledWith({ id: todoToToggleId, completed: newCompletedStatus })
+        expect(trpc.todos.update.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -361,15 +339,14 @@ describe('todoStore', () => {
 
     it('should not make an API call if todo ID does not exist', async () => {
       const nonExistentId = 'non-existent-id'
-      globalThis.fetch = vi.fn() // Reset fetch mock
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.toggleTodo(nonExistentId, true)
         flushSync()
 
-        expect(todoStore.items).toEqual(initialTodos) // State should be unchanged
+        expect(todoStore.items).toEqual(initialStoreTodosForToggle)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).not.toHaveBeenCalled()
+        expect(trpc.todos.update.mutate).not.toHaveBeenCalled()
       })
       cleanupEffect = cleanup
       await promise
@@ -378,54 +355,49 @@ describe('todoStore', () => {
 
   describe('deleteTodo', () => {
     const todoToDeleteId = 'delete-me'
-    const initialTodos: Todo[] = [
-      { id: todoToDeleteId, text: 'Todo to Delete', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
-      { id: 'other-id', text: 'Another Todo', completed: false, createdAt: Date.now(), userId: 'test-user-id' },
+    const initialServerTodosForDelete = [
+      { id: todoToDeleteId, text: 'Todo to Delete', completed: false, createdAt: new Date(Date.now() - 3000).toISOString(), userId: 'test-user-id' },
+      { id: 'other-id', text: 'Another Todo', completed: false, createdAt: new Date(Date.now() - 2000).toISOString(), userId: 'test-user-id' },
     ]
+    let initialStoreTodosForDelete: Todo[]
 
     beforeEach(() => {
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
-      todoStore.items = JSON.parse(JSON.stringify(initialTodos)) // Deep copy
+      initialStoreTodosForDelete = initialServerTodosForDelete.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
+      todoStore.items = JSON.parse(JSON.stringify(initialStoreTodosForDelete)) // Deep copy
       todoStore.error = null
     })
 
     it('should delete a todo successfully and update store state', async () => {
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}), // DELETE typically returns 200/204 with no body
-      } as Response)
+      vi.mocked(trpc.todos.delete.mutate).mockResolvedValueOnce({ id: todoToDeleteId })
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.deleteTodo(todoToDeleteId)
         flushSync()
 
         expect(todoStore.items.find(t => t.id === todoToDeleteId)).toBeUndefined()
-        expect(todoStore.items.length).toBe(initialTodos.length - 1)
+        expect(todoStore.items.length).toBe(initialStoreTodosForDelete.length - 1)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).toHaveBeenCalledWith(`/api/todos/${todoToDeleteId}`, { method: 'DELETE' })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(trpc.todos.delete.mutate).toHaveBeenCalledWith({ id: todoToDeleteId })
+        expect(trpc.todos.delete.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
     })
 
     it('should handle API error when deleting a todo and revert state', async () => {
-      const apiResponseMessage = 'Failed to delete'
-      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-        json: async () => ({ message: apiResponseMessage }),
-      } as Response)
+      const apiErrorMessage = 'Failed to delete todo'
+      vi.mocked(trpc.todos.delete.mutate).mockRejectedValueOnce(new Error(apiErrorMessage))
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.deleteTodo(todoToDeleteId)
         flushSync()
 
-        expect(todoStore.items).toEqual(initialTodos) // State reverted
-        expect(todoStore.items.length).toBe(initialTodos.length)
-        expect(todoStore.error).toBe(apiResponseMessage)
-        expect(globalThis.fetch).toHaveBeenCalledWith(`/api/todos/${todoToDeleteId}`, { method: 'DELETE' })
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(todoStore.items).toEqual(initialStoreTodosForDelete)
+        expect(todoStore.items.length).toBe(initialStoreTodosForDelete.length)
+        expect(todoStore.error).toBe(apiErrorMessage)
+        expect(trpc.todos.delete.mutate).toHaveBeenCalledWith({ id: todoToDeleteId })
+        expect(trpc.todos.delete.mutate).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -433,15 +405,14 @@ describe('todoStore', () => {
 
     it('should not make an API call if todo ID does not exist for deletion', async () => {
       const nonExistentId = 'non-existent-id'
-      globalThis.fetch = vi.fn() // Reset fetch mock for this test
 
       const { promise, cleanup } = runInEffectRoot(async () => {
         await todoStore.deleteTodo(nonExistentId)
         flushSync()
 
-        expect(todoStore.items).toEqual(initialTodos)
+        expect(todoStore.items).toEqual(initialStoreTodosForDelete)
         expect(todoStore.error).toBeNull()
-        expect(globalThis.fetch).not.toHaveBeenCalled()
+        expect(trpc.todos.delete.mutate).not.toHaveBeenCalled()
       })
       cleanupEffect = cleanup
       await promise

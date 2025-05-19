@@ -1,4 +1,5 @@
 import { session } from '$lib/stores/session.svelte'
+import { trpc } from '$lib/trpc'
 
 export interface Todo {
   id: string
@@ -33,15 +34,14 @@ function createTodoStore() {
       this.isLoading = true
       this.error = null
       try {
-        const response = await fetch('/api/todos')
-        if (!response.ok) {
-          const errorResult = await response.json()
-          throw new Error(errorResult.message || `Failed to fetch todos: ${response.statusText}`)
-        }
-        this.items = await response.json()
+        const fetchedTodos = await trpc.todos.list.query()
+        this.items = fetchedTodos.map(todo => ({
+          ...todo,
+          createdAt: new Date(todo.createdAt).getTime(),
+        })) as Todo[]
       }
       catch (err: any) {
-        this.error = err.message
+        this.error = err.message || 'Failed to fetch todos'
         this.items = []
       }
       finally {
@@ -55,20 +55,15 @@ function createTodoStore() {
       this.isLoading = true
       this.error = null
       try {
-        const response = await fetch('/api/todos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
-        })
-        if (!response.ok) {
-          const errorResult = await response.json()
-          throw new Error(errorResult.message || `Failed to add todo: ${response.statusText}`)
+        const newTodoFromServer = await trpc.todos.create.mutate({ text })
+        const newTodoProcessed: Todo = {
+          ...newTodoFromServer,
+          createdAt: new Date(newTodoFromServer.createdAt).getTime(),
         }
-        const newTodo: Todo = await response.json()
-        this.items = [newTodo, ...this.items]
+        this.items = [newTodoProcessed, ...this.items]
       }
       catch (err: any) {
-        this.error = err.message
+        this.error = err.message || 'Failed to add todo'
       }
       finally {
         this.isLoading = false
@@ -87,19 +82,10 @@ function createTodoStore() {
       this.items = updatedItems
 
       try {
-        const response = await fetch(`/api/todos/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed }),
-        })
-        if (!response.ok) {
-          const errorResult = await response.json()
-          this.items = originalItems
-          throw new Error(errorResult.message || `Failed to update todo: ${response.statusText}`)
-        }
+        await trpc.todos.update.mutate({ id, completed })
       }
       catch (err: any) {
-        this.error = err.message
+        this.error = err.message || 'Failed to update todo'
         this.items = originalItems
       }
     },
@@ -107,24 +93,18 @@ function createTodoStore() {
     async deleteTodo(id: string) {
       this.error = null
       const originalItems = [...this.items]
-      const initialLength = this.items.length
+
+      const itemIndex = this.items.findIndex(todo => todo.id === id)
+      if (itemIndex === -1)
+        return
+
       this.items = this.items.filter(todo => todo.id !== id)
 
-      if (this.items.length === initialLength) {
-        this.items = originalItems
-        return
-      }
-
       try {
-        const response = await fetch(`/api/todos/${id}`, { method: 'DELETE' })
-        if (!response.ok) {
-          const errorResult = await response.json()
-          this.items = originalItems
-          throw new Error(errorResult.message || `Failed to delete todo: ${response.statusText}`)
-        }
+        await trpc.todos.delete.mutate({ id })
       }
       catch (err: any) {
-        this.error = err.message
+        this.error = err.message || 'Failed to delete todo'
         this.items = originalItems
       }
     },
@@ -134,7 +114,7 @@ function createTodoStore() {
     $effect(() => {
       const user = session.current?.user
       if (user) {
-        if (store.items.length === 0 && !store.isLoading)
+        if (store.items.length === 0 && !store.isLoading && !store.error)
           store.loadTodos()
       }
       else if (session.current !== undefined) {
