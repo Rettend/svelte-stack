@@ -4,24 +4,37 @@
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
   import { session } from '$lib/stores/session.svelte'
-  import { todoStore } from '$lib/stores/todos.svelte'
+  import { useTodoMutations, useTodos } from '$lib/stores/todos.svelte'
+  import { untrack } from 'svelte'
 
   let newTodoText = $state('')
 
+  const todosQueryResult = useTodos().list
+  const { add: addTodo, toggle: toggleTodo, delete: deleteTodo } = useTodoMutations()
+
+  const items = $derived($todosQueryResult.data ?? [])
+  const isLoadingList = $derived($todosQueryResult.isLoading)
+  const listError = $derived($todosQueryResult.error)
+  const isAdding = $derived($addTodo.isPending)
+
   function handleAddTodo(event: SubmitEvent) {
     event.preventDefault()
-    if (newTodoText.trim()) {
-      todoStore.addTodo(newTodoText.trim())
-      newTodoText = ''
+    const text = untrack(() => newTodoText).trim()
+    if (text) {
+      $addTodo.mutate(text, {
+        onSuccess: () => {
+          newTodoText = ''
+        },
+      })
     }
   }
 
   function handleToggleTodo(todoId: string, completed: boolean) {
-    todoStore.toggleTodo(todoId, completed)
+    $toggleTodo.mutate({ id: todoId, completed })
   }
 
   function handleDeleteTodo(todoId: string) {
-    todoStore.deleteTodo(todoId)
+    $deleteTodo.mutate({ id: todoId })
   }
 </script>
 
@@ -31,32 +44,36 @@
   {#if session.current?.user}
     <form onsubmit={handleAddTodo} class='mb-8 flex items-center gap-2'>
       <Input type='text' bind:value={newTodoText} placeholder='What needs to be done?' class='flex-grow' />
-      <Button type='submit' disabled={!newTodoText.trim() || todoStore.isLoading}>
-        {#if todoStore.isLoading && newTodoText.trim()}Adding...{:else}Add Todo{/if}
+      <Button type='submit' disabled={!newTodoText.trim() || isAdding}>
+        {#if isAdding && newTodoText.trim()}Adding...{:else}Add Todo{/if}
       </Button>
     </form>
 
-    {#if todoStore.isLoading && todoStore.items.length === 0}
+    {#if isLoadingList && items.length === 0}
       <p class='text-muted-foreground'>Loading todos...</p>
-    {:else if todoStore.error}
-      <p class='text-destructive'>Error: {todoStore.error}</p>
-    {:else if todoStore.items.length === 0}
+    {:else if listError}
+      <p class='text-destructive'>Error: {listError?.message}</p>
+    {:else if items.length === 0}
       <p class='text-muted-foreground'>No todos yet! Add one above.</p>
     {:else}
       <ul class='space-y-3'>
-        {#each todoStore.items as todo (todo.id)}
+        {#each items as todo (todo.id)}
+          {@const isTogglingThisTodo = $toggleTodo.isPending && $toggleTodo.variables?.id === todo.id}
+          {@const isDeletingThisTodo = $deleteTodo.isPending && $deleteTodo.variables?.id === todo.id}
+          {@const isCurrentTodoMutating = isTogglingThisTodo || isDeletingThisTodo}
           <li class='flex items-center justify-between border rounded-md bg-card p-4 shadow-sm'>
             <div class='flex items-center gap-3'>
               <Checkbox
                 id={`todo-${todo.id}`}
                 checked={todo.completed}
                 onCheckedChange={checkedState => handleToggleTodo(todo.id, !!checkedState)}
+                disabled={isCurrentTodoMutating}
               />
-              <Label for={`todo-${todo.id}`} class="{todo.completed ? 'text-muted-foreground line-through' : ''} cursor-pointer text-lg">
+              <Label for={`todo-${todo.id}`} class="{todo.completed ? 'text-muted-foreground line-through' : ''} {isCurrentTodoMutating ? 'opacity-50' : ''} cursor-pointer text-lg">
                 {todo.text}
               </Label>
             </div>
-            <Button variant='ghost' size='icon' onclick={() => handleDeleteTodo(todo.id)} title='Delete todo'>
+            <Button variant='ghost' size='icon' onclick={() => handleDeleteTodo(todo.id)} title='Delete todo' disabled={isCurrentTodoMutating}>
               <span class='i-solar:trash-bin-minimalistic-bold size-5 text-destructive'></span>
             </Button>
           </li>
