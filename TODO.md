@@ -7,6 +7,5 @@
 - [x] todos feature (frontend UI, API integration)
 - [x] vitest
 - [x] coverage
-- [ ] playwright
-- [ ] svelte-query
-- [ ] trpc
+- [x] trpc
+- [ ] svelte-query (no svelte 5 support yet)

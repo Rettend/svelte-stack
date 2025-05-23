@@ -22,9 +22,7 @@
     "r:studio": "drizzle-kit studio --config=./drizzle.config.remote.ts",
     "lint": "eslint --fix .",
     "test": "vitest run --coverage",
-    "test:ui": "vitest --ui",
-    "test:pw": "VITE_COVERAGE=true rimraf .nyc_output && playwright test && nyc report && bunx http-server coverage/playwright --open",
-    "test:e2e": "VITE_COVERAGE=true rimraf .nyc_output && playwright test && nyc report && playwright show-report"
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.9.1",
@@ -47,7 +45,6 @@
     "@iconify-json/ph": "^1.2.2",
     "@iconify-json/solar": "^1.2.2",
     "@lucide/svelte": "^0.511.0",
-    "@playwright/test": "^1.52.0",
     "@sveltejs/adapter-cloudflare": "^7.0.3",
     "@sveltejs/kit": "^2.21.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
