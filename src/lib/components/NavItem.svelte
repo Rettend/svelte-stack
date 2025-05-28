@@ -22,7 +22,7 @@
   {target}
   {rel}
   variant='ghost'
-  class={`text-lg font-bold hover:(bg-primary/10 text-primary) ${isActive ? 'text-primary bg-primary/5' : ''} ${consumerClass ?? ''.trim()}`}
+  class={`text-lg font-bold hover:(bg-primary/10 text-primary) ${isActive ? 'text-primary bg-primary/5' : ''} ${consumerClass ?? ''}`}
 >
   {@render children()}
 </Button>

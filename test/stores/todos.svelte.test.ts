@@ -1,9 +1,9 @@
-import type { Todo } from './todos.svelte'
+import type { Todo } from '../../src/lib/stores/todos.svelte'
 import { trpc } from '$lib/trpc'
 import { flushSync } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { session } from './session.svelte'
-import { todoStore } from './todos.svelte'
+import { session } from '../../src/lib/stores/session.svelte'
+import { todoStore } from '../../src/lib/stores/todos.svelte'
 
 vi.mock('$lib/trpc', () => ({
   trpc: {

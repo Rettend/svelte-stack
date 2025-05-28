@@ -1,9 +1,13 @@
 import process from 'node:process'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import UnoCSS from 'unocss/vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [svelte({ hot: !process.env.VITEST })],
+  plugins: [
+    UnoCSS(),
+    svelte({ hot: !process.env.VITEST }),
+  ],
   resolve: {
     conditions: ['svelte', 'browser'],
   },
@@ -23,7 +27,7 @@ export default defineConfig({
         'src/lib/components/ui/**/',
         'src/*.*',
         'src/lib/server/**',
-        'src/routes/**',
+        'src/routes/trpc/**',
         'test/**',
       ],
     },
@@ -35,6 +39,8 @@ export default defineConfig({
     alias: {
       '$lib/': new URL('./src/lib/', import.meta.url).pathname,
       '$app/state': new URL('./test/mocks/app-state.ts', import.meta.url).pathname,
+      '$app/environment': new URL('./test/mocks/app-environment.ts', import.meta.url).pathname,
+      '$env/dynamic/private': new URL('./test/mocks/env.ts', import.meta.url).pathname,
     },
     typecheck: {
       tsconfig: './test/tsconfig.json',
