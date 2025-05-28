@@ -110,19 +110,26 @@ function createTodoStore() {
     },
   })
 
+  let loadedForUserId: string | null = $state(null)
+
   $effect.root(() => {
     $effect(() => {
-      const user = session.current?.user
-      if (user) {
-        if (store.items.length === 0 && !store.isLoading && !store.error)
-          store.loadTodos()
+      const currentUserId = session.current?.user?.id
+
+      if (currentUserId) {
+        if (currentUserId !== loadedForUserId) {
+          if (!store.isLoading) {
+            store.loadTodos()
+            loadedForUserId = currentUserId
+          }
+        }
       }
       else if (session.current !== undefined) {
-        if (store.items.length > 0)
+        if (store.items.length > 0 || store.error !== null || loadedForUserId !== null) {
           store.items = []
-
-        if (store.error)
           store.error = null
+          loadedForUserId = null
+        }
       }
     })
   })
