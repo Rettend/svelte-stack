@@ -35,11 +35,15 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
       strategy: 'database',
     },
     callbacks: {
-      async signIn({ account, profile }) {
+      async signIn({ user, account, profile }) {
         if (account?.provider === 'google') {
-          if (!profile?.email_verified)
+          if (profile && profile.email && !profile.email_verified)
             return false
         }
+
+        if (!user?.email)
+          return false
+
         return true
       },
       session({ session, user }) {

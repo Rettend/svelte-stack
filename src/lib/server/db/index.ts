@@ -17,7 +17,7 @@ else {
 }
 
 const client = createClient({
-  url: dev ? env.DATABASE_URL_LOCAL : env.DATABASE_URL_REMOTE,
+  url: dev ? env.DATABASE_URL_LOCAL! : env.DATABASE_URL_REMOTE!,
   authToken: dev ? undefined : env.DATABASE_AUTH_TOKEN,
 })
 
