@@ -191,18 +191,28 @@ describe('todoStore', () => {
       const mockNewServerTodo = { id: 'new-id', text: newTodoText, completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' }
       const expectedNewStoreTodo: Todo = { ...mockNewServerTodo, createdAt: new Date(mockNewServerTodo.createdAt).getTime() }
 
-      vi.mocked(trpc.todos.create.mutate).mockResolvedValueOnce(mockNewServerTodo as any)
-
-      session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
       const initialServerTodos = [
         { id: '1', text: 'Existing Todo', completed: false, createdAt: new Date(Date.now() - 1000).toISOString(), userId: 'test-user-id' },
       ]
       const initialStoreTodos: Todo[] = initialServerTodos.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
-      todoStore.items = [...initialStoreTodos]
+
+      vi.mocked(trpc.todos.create.mutate).mockResolvedValueOnce(mockNewServerTodo as any)
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce(initialServerTodos as any)
+
+      todoStore.items = []
       todoStore.error = null
       todoStore.isLoading = false
 
       const { promise, cleanup } = runInEffectRoot(async () => {
+        session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
+        flushSync()
+
+        await vi.waitFor(() => {
+          expect(todoStore.isLoading).toBe(false)
+
+          expect(todoStore.items).toEqual(initialStoreTodos)
+        })
+
         await todoStore.addTodo(newTodoText)
         flushSync()
 
@@ -213,6 +223,7 @@ describe('todoStore', () => {
         expect(todoStore.error).toBeNull()
         expect(trpc.todos.create.mutate).toHaveBeenCalledWith({ text: newTodoText })
         expect(trpc.todos.create.mutate).toHaveBeenCalledTimes(1)
+        expect(trpc.todos.list.query).toHaveBeenCalledTimes(1)
       })
       cleanupEffect = cleanup
       await promise
@@ -223,6 +234,7 @@ describe('todoStore', () => {
       const apiErrorMessage = 'Failed to add todo'
 
       vi.mocked(trpc.todos.create.mutate).mockRejectedValueOnce(new Error(apiErrorMessage))
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce([])
 
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
       const initialServerTodos = [
@@ -250,6 +262,8 @@ describe('todoStore', () => {
 
     it('should not add a todo if text is empty or whitespace', async () => {
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
+
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce([])
       const initialServerTodos = [
         { id: '1', text: 'Existing Todo', completed: false, createdAt: new Date().toISOString(), userId: 'test-user-id' },
       ]
@@ -292,6 +306,7 @@ describe('todoStore', () => {
 
     beforeEach(() => {
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce([])
       initialStoreTodosForToggle = initialServerTodosForToggle.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
       todoStore.items = JSON.parse(JSON.stringify(initialStoreTodosForToggle))
       todoStore.error = null
@@ -363,8 +378,9 @@ describe('todoStore', () => {
 
     beforeEach(() => {
       session.current = { user: { id: 'test-user-id' }, expires: 'sometime' } as any
+      vi.mocked(trpc.todos.list.query).mockResolvedValueOnce([])
       initialStoreTodosForDelete = initialServerTodosForDelete.map(t => ({ ...t, createdAt: new Date(t.createdAt).getTime() }))
-      todoStore.items = JSON.parse(JSON.stringify(initialStoreTodosForDelete)) // Deep copy
+      todoStore.items = JSON.parse(JSON.stringify(initialStoreTodosForDelete))
       todoStore.error = null
     })
 
