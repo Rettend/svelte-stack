@@ -1,11 +1,11 @@
 import type { SvelteKitAuthConfig } from '@auth/sveltekit'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import { env } from '$env/dynamic/private'
-import CustomGitHub from '$lib/github'
 import { db } from '$lib/server/db'
 import * as schema from '$lib/server/db/schema'
 import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { SvelteKitAuth } from '@auth/sveltekit'
+import GitHub from '@auth/sveltekit/providers/github'
 import Google from '@auth/sveltekit/providers/google'
 
 export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
@@ -20,7 +20,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
       authenticatorsTable: schema.authenticators,
     }),
     providers: [
-      CustomGitHub({
+      GitHub({
         clientId: env.AUTH_GITHUB_ID,
         clientSecret: env.AUTH_GITHUB_SECRET,
         allowDangerousEmailAccountLinking: true,
@@ -35,18 +35,11 @@ export const { handle, signIn, signOut } = SvelteKitAuth(async () => {
       strategy: 'database',
     },
     callbacks: {
-      async signIn({ user, account, profile }) {
-        if (account?.provider === 'github') {
-          if (!user.email || !user.email_verified)
+      async signIn({ account, profile }) {
+        if (account?.provider === 'google') {
+          if (!profile?.email_verified)
             return false
         }
-        else if (profile && profile.email && !profile.email_verified) {
-          return false
-        }
-        else if (!user?.email) {
-          return false
-        }
-
         return true
       },
       session({ session, user }) {
